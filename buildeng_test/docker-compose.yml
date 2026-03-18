@@ -1,0 +1,44 @@
+# SCS Build Engineering Take-Home Assessment
+# Do Not Distribute
+---
+services:
+  buildbot:
+    build: 
+      context: docker/
+      dockerfile: master.Dockerfile
+    init: true
+    ports:
+      - "8010:8010"
+      - "9989:9989"
+    environment: &worker
+      - BUILDMASTER=buildbot:9989
+      - WORKERNAME=worker
+      - WORKERPASS=pass
+    volumes:
+      - buildbot:/var/lib/buildbot
+      ### NOTICE: Override for the masters configuration
+      ###         a remote DOCKER_HOST will cause this to fail
+      ###         _unless_ you manually copy the file to the 
+      ###         remote at this absolute path.
+      - ./docker/master.cfg:/etc/buildbot/master.cfg
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+  buildbot-worker:
+    build:
+      context: ./docker
+      dockerfile: worker.Dockerfile
+    depends_on:
+      - buildbot
+    environment: *worker
+    volumes:
+      - ./dev_src:/src:ro
+      - buildbot_worker:/worker
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+volumes:
+  buildbot:
+  buildbot_worker:
